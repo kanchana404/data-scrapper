@@ -1,3 +1,4 @@
+// app/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -10,7 +11,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, RefreshCcw } from 'lucide-react';
+import { Moon, Sun, RefreshCcw, Copy, Check } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +34,14 @@ const Page: React.FC = () => {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // Handle mounting for theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -57,9 +65,20 @@ const Page: React.FC = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   };
+
+  // Handle theme loading
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -96,7 +115,11 @@ const Page: React.FC = () => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={toggleTheme}>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
                 {theme === 'dark' ? (
                   <Sun className="h-5 w-5" />
                 ) : (
@@ -156,9 +179,32 @@ const Page: React.FC = () => {
               </div>
               <div className="flex justify-between items-center py-1 border-b">
                 <span className="text-muted-foreground">Address</span>
-                <span className="font-medium text-sm truncate max-w-[200px]">
-                  {data?.address}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm truncate max-w-[200px]">
+                    {data?.address}
+                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => data?.address && copyToClipboard(data.address)}
+                        >
+                          {copied ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{copied ? 'Copied!' : 'Copy address'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </div>
             <div className="text-sm text-muted-foreground text-right">
